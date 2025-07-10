@@ -1,0 +1,5 @@
+google_account_credentials.json
+.env
+venv
+__pycache__/
+*.__py[cod]
