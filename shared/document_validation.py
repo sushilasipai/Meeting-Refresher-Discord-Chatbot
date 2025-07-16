@@ -1,4 +1,5 @@
 import re
+import requests
 
 def extract_doc_id_from_url(url):
     match = re.search(r"/document/d/([a-zA-Z0-9-_]+)", url)

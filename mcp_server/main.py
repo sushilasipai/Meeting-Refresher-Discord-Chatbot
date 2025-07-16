@@ -1,39 +1,33 @@
 from fastapi import FastAPI, Request
 from mcp_server.plugins.gdocs_plugin import get_doc_text
 from mcp_server.plugins.groq_plugin import query_llm
+from .prompt_builder import build_prompt
 from shared.document_validation import extract_doc_id_from_url
 
 app = FastAPI()
 
-@app.post("/query")
-async def handle_query(req: Request):
+@app.post("/mcp")
+async def handle_mcp_query(req: Request):
     data = await req.json()
-    question = data.get("question")
-    doc_url = data.get("doc_url")
+    user_input = data.get("input", {})
+    message = user_input.get("message", "")
+    context_info = user_input.get("context", {})
 
-    if not question or not doc_url:
-        return {"error": "Both 'question' and 'doc_url' are required."}
+    if not message or not context_info.get("doc_url"):
+        return {"error": "Both 'input.message' and 'input.context.doc_url' are required."}
+
     try:
-        doc_id = extract_doc_id_from_url(doc_url)
-    except ValueError as e:
-        return {"error": str(e)}
-    try:
+        doc_id = extract_doc_id_from_url(context_info["doc_url"])
         notes = get_doc_text(doc_id)
     except Exception as e:
-        return {"error": f"Google Docs access failed: {str(e)}"}
+        return {"error": f"Failed to load document: {str(e)}"}
+    
+    messages = build_prompt(message, notes)
 
-    prompt = f"""You are an assistant helping with meeting notes.
+    try:
+        answer = query_llm(messages)
+    except Exception as e:
+        return {"error": f"LLM call failed: {str(e)}"}
 
-                    Meeting Notes:
-                    {notes}
+    return {"response": answer}
 
-                    Question:
-                    {question}
-
-                    Instructions:
-                        - If the user message is a question or request related to the meeting notes, provide a clear, concise, and helpful answer.
-                        - If the user says thank you or expresses gratitude, respond naturally (e.g., "You're welcome!", "Glad to help!").
-                        - If the message is casual or unrelated, respond with a friendly and polite prompt (e.g., "Let me know if you'd like to discuss anything about the meeting notes.").
-                """
-    answer = query_llm(prompt)
-    return {"answer": answer}

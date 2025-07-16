@@ -2,7 +2,7 @@ import discord
 import requests
 import re
 from shared.config import DISCORD_BOT_TOKEN, BASE_URL, ALLOWED_DISCORD_CHANNEL_ID
-from shared.document_validation import extract_any_url, extract_doc_id_from_url,extract_google_doc_url
+from shared.document_validation import extract_any_url, extract_doc_id_from_url,extract_google_doc_url, is_valid_google_doc
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -56,15 +56,21 @@ async def on_message(message):
             await message.channel.send("Please ask a question about the document.")
             return
 
-    payload = {
-        "question": question,
-        "doc_url": google_doc_url
+    mcp_payload = {
+        "input": {
+            "message": question,
+            "context": {
+                "doc_url": google_doc_url,
+                "type": "meeting_notes",
+                "plugins": ["gdocs"]
+            }
+        }
     }
 
     try:
-        response = requests.post(BASE_URL + "query", json=payload)
+        response = requests.post(BASE_URL + "mcp", json=mcp_payload)
         response.raise_for_status()
-        answer = response.json().get("answer", "Sorry, I couldn't find an answer.")
+        answer = response.json().get("response", "Sorry, I couldn't find an answer.")
     except Exception as e:
         answer = f"Error contacting the server: {e}"
 

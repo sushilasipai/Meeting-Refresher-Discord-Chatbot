@@ -12,10 +12,7 @@ def query_llm(prompt: str):
 
     payload = {
         "model": "llama3-8b-8192",  
-        "messages": [
-            {"role": "system", "content": "You are a helpful assistant."},
-            {"role": "user", "content": prompt}
-        ],
+        "messages": prompt,
         "temperature": 0.7
     }
 
