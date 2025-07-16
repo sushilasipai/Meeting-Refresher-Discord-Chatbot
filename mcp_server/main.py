@@ -16,7 +16,7 @@ async def handle_query(req: Request):
     try:
         doc_id = extract_doc_id_from_url(doc_url)
     except ValueError as e:
-        return {"error": str(e)}s
+        return {"error": str(e)}
     try:
         notes = get_doc_text(doc_id)
     except Exception as e:
